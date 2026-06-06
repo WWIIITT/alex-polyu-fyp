@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from app.services.embedding_backfill_service import (  # noqa: E402
+from app.services.documents.embedding_backfill_service import (  # noqa: E402
     DEFAULT_TARGET_COLUMN,
     DEFAULT_V2_MODEL,
     backfill_embedding_column,

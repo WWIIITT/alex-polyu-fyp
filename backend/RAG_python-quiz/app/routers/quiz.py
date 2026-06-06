@@ -3,8 +3,8 @@ from typing import List, Optional
 from fastapi import APIRouter, Body, Depends, Form, Query
 
 from app.logger import get_logger
-from app.routers import quiz_helpers
-from app.routers.service_helpers import run_async_service
+from app.api_helpers import quiz_helpers
+from app.api_helpers.service_helpers import run_async_service
 from app.services.pg import pg_access_control as pg_service
 from app.services.pg import pg_quiz_service
 from app.services.pg.pg_classes_service import is_user_teacher

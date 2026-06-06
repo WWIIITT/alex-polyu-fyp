@@ -7,8 +7,8 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from app.logger import get_logger
-from app.routers import upload_helpers
-from app.routers.service_helpers import error_detail, run_async_service
+from app.api_helpers import upload_helpers
+from app.api_helpers.service_helpers import error_detail, run_async_service
 from app.services.documents.document_service import ingest_document, ingest_website
 from app.services.realtime.progress_bus import publish_progress
 from app.utils.jwt_utils import get_current_user
@@ -17,10 +17,7 @@ logger = get_logger(__name__)
 
 router = APIRouter(prefix="", tags=["upload"])
 
-_build_success_result = upload_helpers.build_success_result
-_build_failure_result = upload_helpers.build_failure_result
-_summarize_results = upload_helpers.summarize_results
-_batch_status = upload_helpers.batch_status
+
 _http_status_for_batch = upload_helpers.http_status_for_batch
 _progress_payload = upload_helpers.progress_payload
 _upload_batch_payload = upload_helpers.upload_batch_payload

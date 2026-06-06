@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
-from app.routers.service_helpers import error_detail
+from app.api_helpers.service_helpers import error_detail
 from app.services.pg.rls_context import clear_current_rls_user, set_current_rls_user
 from app.services.rag import adaptive_rag_service
 from app.utils.jwt_utils import get_current_user

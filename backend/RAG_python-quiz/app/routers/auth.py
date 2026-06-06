@@ -3,7 +3,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel
 
 from app.logger import get_logger
-from app.routers.service_helpers import error_detail, run_service, success_payload
+from app.api_helpers.service_helpers import error_detail, run_service, success_payload
 from app.services.auth.service import auth_service
 from app.utils.jwt_utils import verify_token
 

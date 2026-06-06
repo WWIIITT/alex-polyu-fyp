@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch
 
-from app.services.ai import exam_ai_grading_service, quiz_feedback_service
+from app.services.ai import exam_ai_grading_service, exam_grading_prompts, exam_grading_runtime, quiz_feedback_service
 from app.services.ai.llm import structured_json, text_completion
 from tests.support import fake_llm_retry, make_chat_client, make_completion_response
 
@@ -140,9 +140,9 @@ class ExamAiGradingServiceTests(unittest.IsolatedAsyncioTestCase):
         response = make_completion_response()
         client = make_chat_client(response)
 
-        self.assertIn("No specific marking criteria", exam_ai_grading_service._format_marking_criteria(None))
-        self.assertIn("Reference/Model Answer", exam_ai_grading_service._format_reference_answer("It blocks"))
-        self.assertEqual(exam_ai_grading_service._clamp_marks({"marks_earned": 99}, 3)["marks_earned"], 3)
+        self.assertIn("No specific marking criteria", exam_grading_prompts.format_marking_criteria(None))
+        self.assertIn("Reference/Model Answer", exam_grading_prompts.format_reference_answer("It blocks"))
+        self.assertEqual(exam_grading_runtime.clamp_marks({"marks_earned": 99}, 3)["marks_earned"], 3)
 
         wrapped_json = """```json\n{"marks_earned": 99, "feedback": "Good", "is_correct": true, "analysis": "ok"}\n```"""
         with patch("app.services.ai.exam_ai_grading_service.get_llm_client", return_value=client), patch(

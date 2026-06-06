@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 
-from app.routers.service_helpers import error_detail, require_allowed, require_teacher, run_service
+from app.api_helpers.service_helpers import error_detail, require_allowed, require_teacher, run_service
 from app.services.pg.pg_access_control import can_access_chunk, can_access_class, can_access_document
 from app.services.pg.pg_classes_service import is_user_teacher
 from app.services.pg.pg_files_service import (

@@ -6,8 +6,8 @@ from pydantic import BaseModel, model_validator
 
 from app.agents.schemas import ExamGenerationRequest, ExamGenerationResponse
 from app.logger import get_logger
-from app.routers import exam_helpers
-from app.routers.service_helpers import require_allowed, run_service
+from app.api_helpers import exam_helpers
+from app.api_helpers.service_helpers import require_allowed, run_service
 from app.services.assessment import exam_workflow_service
 from app.services.pg.pg_access_control import (
     can_access_class,

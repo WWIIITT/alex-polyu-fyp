@@ -2,7 +2,7 @@ from typing import Any, Callable
 
 from fastapi import HTTPException
 
-from app.routers.service_helpers import require_allowed, require_teacher, run_service
+from app.api_helpers.service_helpers import require_allowed, require_teacher, run_service
 
 
 def questions_from_payload(payload: dict[str, Any], *, required: bool) -> list:

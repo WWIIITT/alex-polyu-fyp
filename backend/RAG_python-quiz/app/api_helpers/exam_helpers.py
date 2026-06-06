@@ -4,7 +4,7 @@ from typing import Any, Callable, List
 from fastapi import HTTPException
 from fastapi.responses import FileResponse
 
-from app.routers.service_helpers import require_allowed, require_teacher, run_service
+from app.api_helpers.service_helpers import require_allowed, require_teacher, run_service
 
 
 def require_teacher_user(user: dict[str, Any], detail: str, teacher_checker: Callable[[str], bool]) -> None:

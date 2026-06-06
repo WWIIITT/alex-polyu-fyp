@@ -85,7 +85,7 @@ class DocumentServiceEmbeddingTests(unittest.IsolatedAsyncioTestCase):
             "app.services.documents.document_service.asyncio.sleep",
             return_value=None,
         ):
-            vectors = await document_service._embed_chunks_with_retry(chunks)
+            vectors = await document_service.embed_texts_with_retry([chunk["pageContent"] for chunk in chunks])
 
         self.assertEqual(vectors, [[0.0], [1.0], [2.0], [3.0]])
         self.assertGreaterEqual(len(model.calls), 7)
@@ -102,7 +102,7 @@ class DocumentServiceEmbeddingTests(unittest.IsolatedAsyncioTestCase):
             return_value=None,
         ):
             with self.assertRaises(EmbeddingProviderError) as ctx:
-                await document_service._embed_chunks_with_retry(chunks)
+                await document_service.embed_texts_with_retry([chunk["pageContent"] for chunk in chunks])
 
         error = ctx.exception
         self.assertEqual(error.code, "EMBEDDING_UPSTREAM_FAILED")

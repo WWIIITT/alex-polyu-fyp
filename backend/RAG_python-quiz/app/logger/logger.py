@@ -11,6 +11,19 @@ DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 LOG_FILE = log_dir / "app.log"
 MAX_BYTES = 10 * 1024 * 1024
 BACKUP_COUNT = 5
+WINDOWS_SHARING_VIOLATION = 32
+
+
+class SafeRotatingFileHandler(RotatingFileHandler):
+    def doRollover(self) -> None:
+        try:
+            super().doRollover()
+        except OSError as error:
+            if getattr(error, "winerror", None) == WINDOWS_SHARING_VIOLATION:
+                if self.stream is None:
+                    self.stream = self._open()
+                return
+            raise
 
 
 def get_logger(name: str = "app") -> logging.Logger:
@@ -24,7 +37,7 @@ def get_logger(name: str = "app") -> logging.Logger:
     console_handler.setLevel(logging.INFO)
     console_handler.setFormatter(logging.Formatter(LOG_FORMAT, DATE_FORMAT))
 
-    file_handler = RotatingFileHandler(
+    file_handler = SafeRotatingFileHandler(
         LOG_FILE,
         maxBytes=MAX_BYTES,
         backupCount=BACKUP_COUNT,

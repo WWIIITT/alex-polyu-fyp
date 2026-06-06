@@ -80,10 +80,6 @@ async def embed_texts_with_retry(
     )
 
 
-async def _embed_chunks_with_retry(chunks: List[Dict[str, Any]]) -> List[List[float]]:
-    return await embed_texts_with_retry([chunk["pageContent"] for chunk in chunks])
-
-
 async def _embed_chunks_for_storage(
     chunks: List[Dict[str, Any]],
 ) -> tuple[List[List[float]], Optional[List[List[float]]]]:

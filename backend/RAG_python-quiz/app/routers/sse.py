@@ -4,7 +4,7 @@ import json
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 
-from app.routers.service_helpers import error_detail
+from app.api_helpers.service_helpers import error_detail
 from app.services.realtime.progress_bus import get_queue, remove_queue
 
 

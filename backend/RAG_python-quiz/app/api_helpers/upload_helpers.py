@@ -5,7 +5,7 @@ from typing import Any, Callable, Awaitable
 from fastapi import HTTPException
 from fastapi.responses import JSONResponse
 
-from app.routers.service_helpers import success_payload
+from app.api_helpers.service_helpers import success_payload
 from app.utils.ingest_errors import DocumentIngestError, EmbeddingProviderError
 
 

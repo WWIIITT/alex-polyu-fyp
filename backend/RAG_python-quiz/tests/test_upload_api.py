@@ -1,6 +1,7 @@
 from unittest.mock import AsyncMock, patch
 import unittest
 
+from app.api_helpers import upload_helpers
 from app.routers import upload
 from app.routers.upload import router
 from app.utils.ingest_errors import DocumentIngestError
@@ -85,7 +86,7 @@ class UploadApiTests(unittest.TestCase):
         self.assertEqual(finished_event["status"], "failed")
 
     def test_upload_helper_functions_cover_unexpected_errors(self):
-        result = upload._build_failure_result("broken.pdf", RuntimeError("boom"))
+        result = upload_helpers.build_failure_result("broken.pdf", RuntimeError("boom"))
         self.assertEqual(result["status"], "failed")
         self.assertEqual(result["error"]["code"], "INGEST_FAILED")
 

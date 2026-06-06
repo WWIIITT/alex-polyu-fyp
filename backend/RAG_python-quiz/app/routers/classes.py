@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Body, Depends
 from pydantic import BaseModel
 
-from app.routers.service_helpers import error_detail, exception_is, run_service
+from app.api_helpers.service_helpers import error_detail, exception_is, run_service
 from app.services.pg import pg_classes_service as pg_service
 from app.utils.jwt_utils import get_current_user
 

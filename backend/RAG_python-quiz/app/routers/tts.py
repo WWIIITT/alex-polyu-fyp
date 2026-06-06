@@ -10,7 +10,7 @@ from pydantic import BaseModel
 from google.genai import types
 
 from app.logger import get_logger
-from app.routers.service_helpers import error_detail
+from app.api_helpers.service_helpers import error_detail
 from app.utils.api_key_manager import get_llm_client, with_llm_retry_sync
 
 logger = get_logger(__name__)
@@ -23,27 +23,6 @@ class TTSRequest(BaseModel):
     voice_name: str | None = "Zephyr"
     model: str | None = None
     target_mime: str | None = "audio/wav"
-
-
-def _to_bytes(audio_data) -> bytes:
-    if isinstance(audio_data, (bytes, bytearray)):
-        return bytes(audio_data)
-    if isinstance(audio_data, str):
-        try:
-            return base64.b64decode(audio_data, validate=False)
-        except Exception as error:
-            raise ValueError(
-                f"Expected bytes or base64 string; got non-base64 str: {error}"
-            )
-    raise ValueError(f"Unsupported audio data type: {type(audio_data)!r}")
-
-
-def _rate_from_mime(mime_type: str, default_rate: int = 24000) -> int:
-    if not mime_type:
-        return default_rate
-    match = re.search(r"rate\s*=\s*(\d+)", mime_type, flags=re.IGNORECASE)
-    return int(match.group(1)) if match else default_rate
-
 
 def pcm_to_wav(
     pcm_data: bytes,
@@ -75,23 +54,6 @@ def pcm_to_wav(
     wav_data = buffer.getvalue()
     logger.debug("[WAV] sample_rate=%s total=%s", sample_rate, len(wav_data))
     return wav_data
-
-
-def _iter_response_parts(resp: types.GenerateContentResponse):
-    yield from getattr(resp, "parts", []) or []
-    for candidate in getattr(resp, "candidates", []) or []:
-        content = getattr(candidate, "content", None)
-        if content:
-            yield from getattr(content, "parts", []) or []
-
-
-def _find_inline_audio_part(resp: types.GenerateContentResponse) -> types.Part | None:
-    for part in _iter_response_parts(resp):
-        inline_data = getattr(part, "inline_data", None)
-        mime_type = getattr(inline_data, "mime_type", "")
-        if inline_data and mime_type.lower().startswith("audio/"):
-            return part
-    return None
 
 
 def _synthesize_once(

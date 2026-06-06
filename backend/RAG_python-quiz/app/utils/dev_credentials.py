@@ -1,3 +1,8 @@
+"""Credential helpers for evaluation scripts and manual tooling.
+
+These helpers are intentionally outside the FastAPI runtime auth flow.
+"""
+
 from dataclasses import dataclass
 
 from app.config import get_settings

@@ -7,7 +7,7 @@ from jose import JWTError, jwt
 
 from app.config import get_settings
 from app.logger import get_logger
-from app.routers.service_helpers import error_detail
+from app.api_helpers.service_helpers import error_detail
 from app.services.pg.rls_context import set_current_rls_user
 
 logger = get_logger(__name__)

@@ -1,8 +1,10 @@
 import asyncio
 import logging
+import tempfile
 import unittest
 from datetime import datetime
 from io import BytesIO
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -38,6 +40,36 @@ class RuntimeMiscTests(unittest.TestCase):
             self.assertGreaterEqual(len(configured.handlers), 2)
         finally:
             logger.handlers.clear()
+
+    def test_safe_rotating_file_handler_ignores_windows_sharing_violation(self):
+        error = PermissionError("locked")
+        error.winerror = logger_module.WINDOWS_SHARING_VIOLATION
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            handler = logger_module.SafeRotatingFileHandler(Path(tmp_dir) / "app.log")
+            try:
+                handler.stream.close()
+                handler.stream = None
+                with patch.object(logger_module.RotatingFileHandler, "doRollover", side_effect=error) as rollover:
+                    handler.doRollover()
+
+                rollover.assert_called_once()
+                self.assertIsNotNone(handler.stream)
+            finally:
+                handler.close()
+
+    def test_safe_rotating_file_handler_reraises_other_rollover_errors(self):
+        error = PermissionError("locked")
+        error.winerror = 5
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            handler = logger_module.SafeRotatingFileHandler(Path(tmp_dir) / "app.log")
+            try:
+                with patch.object(logger_module.RotatingFileHandler, "doRollover", side_effect=error):
+                    with self.assertRaises(PermissionError):
+                        handler.doRollover()
+            finally:
+                handler.close()
 
     def test_pg_db_get_conn_uses_real_dict_cursor_and_settings(self):
         rls_context.clear_current_rls_user()
