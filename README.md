@@ -125,6 +125,42 @@ Before running the project locally, install:
 - Docker Desktop, if using the local pgvector database setup below
 - Provider API keys for Google Gemini/OpenRouter-compatible services
 
+## Quick Start
+
+After the database has been initialized once, the normal local startup order is:
+
+1. Start Docker Desktop.
+2. Start the local PostgreSQL container:
+
+```powershell
+docker start polyu-postgres
+```
+
+3. Start the backend:
+
+```powershell
+cd backend\RAG_python-quiz
+.\.venv\Scripts\Activate.ps1
+uvicorn main:app --host 0.0.0.0 --port 3000 --reload
+```
+
+4. Start the web frontend in another terminal:
+
+```powershell
+cd frontend\vite-project
+npm run dev
+```
+
+5. Open the web app:
+
+```text
+http://localhost:5173
+OR
+http://localhost:5000
+```
+
+You do not need to rerun `backend/RAG_python-quiz/migrations/000_init_database.sql` every time. Rerun it only after recreating the database container or when new migrations/schema changes need to be applied.
+
 ## Database Setup with Neon Postgres
 
 This public repository does not include a real database connection string, JWT secret, or provider API keys. Create those values in your own environment and never commit live secrets to Git.
