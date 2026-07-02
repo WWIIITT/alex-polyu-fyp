@@ -189,13 +189,13 @@ If login fails with `function app_security.auth_store_refresh_token(...) does no
 
 ## Local Database Setup with Docker
 
-For local development, the simplest PostgreSQL setup is the `pgvector` Docker image. This provides the `vector` extension required by the retrieval tables. The Neon `pg_search` extension is optional locally; when it is unavailable, the initializer skips the BM25 index and the app should use the PostgreSQL full-text/trigram fallback.
+For local development with BM25 search enabled, use the ParadeDB Docker image. It includes both `pg_search` for BM25 retrieval and `pgvector` for vector similarity search.
 
 If another PostgreSQL service is already using port `5432`, stop it first or map Docker to another host port and update `PG_DSN` accordingly.
 
 ```powershell
 docker rm -f polyu-postgres
-docker run --name polyu-postgres -e POSTGRES_PASSWORD="<local-postgres-password>" -p 5432:5432 -d pgvector/pgvector:pg18
+docker run --name polyu-postgres -e POSTGRES_PASSWORD="<local-postgres-password>" -p 5432:5432 -d paradedb/paradedb:latest
 ```
 
 Initialize the schema from the repository root:
@@ -214,13 +214,13 @@ Configure `backend/RAG_python-quiz/.env`:
 
 ```dotenv
 PG_DSN=postgresql://postgres:<local-postgres-password>@localhost:5432/postgres
-FULLTEXT_SEARCH_BACKEND=postgres
+FULLTEXT_SEARCH_BACKEND=pg_search
 JWT_SECRET_KEY=<generate-a-long-random-secret>
 ```
 
 Use your own local password and do not commit `.env` or live credentials.
 
-During local initialization, notices such as `pg_search extension is unavailable; skipping BM25 setup` are expected. They are not failures when `FULLTEXT_SEARCH_BACKEND=postgres`.
+If you intentionally use a plain `pgvector/pgvector` PostgreSQL image instead, set `FULLTEXT_SEARCH_BACKEND=postgres`. In that fallback mode, notices such as `pg_search extension is unavailable; skipping BM25 setup` are expected.
 
 ## Backend Setup
 
