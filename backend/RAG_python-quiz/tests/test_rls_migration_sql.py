@@ -61,8 +61,11 @@ class RlsMigrationSqlTests(unittest.TestCase):
         migration_path = Path(__file__).resolve().parents[1] / "migrations" / "000_init_database.sql"
         sql = migration_path.read_text(encoding="utf-8")
 
-        for extension_name in ["pgcrypto", "vector", "pg_trgm", "pg_search"]:
+        for extension_name in ["pgcrypto", "vector", "pg_trgm"]:
             self.assertIn(f"CREATE EXTENSION IF NOT EXISTS {extension_name};", sql)
+
+        self.assertIn("CREATE EXTENSION IF NOT EXISTS pg_search;", sql)
+        self.assertIn("WHEN feature_not_supported OR undefined_file THEN", sql)
 
         for table_name in [
             "users",
@@ -97,6 +100,7 @@ class RlsMigrationSqlTests(unittest.TestCase):
             "replaced_by_token_id uuid",
             "USING bm25 (id, text)",
             "WITH (key_field='id')",
+            "IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_search') THEN",
         ]:
             self.assertIn(required_fragment, sql)
 

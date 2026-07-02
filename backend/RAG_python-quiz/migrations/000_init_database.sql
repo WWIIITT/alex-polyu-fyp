@@ -10,7 +10,15 @@
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 CREATE EXTENSION IF NOT EXISTS vector;
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
-CREATE EXTENSION IF NOT EXISTS pg_search;
+
+DO $$
+BEGIN
+    CREATE EXTENSION IF NOT EXISTS pg_search;
+EXCEPTION
+    WHEN feature_not_supported OR undefined_file THEN
+        RAISE NOTICE 'pg_search extension is unavailable; skipping BM25 setup. Use FULLTEXT_SEARCH_BACKEND=postgres for local PostgreSQL.';
+END
+$$;
 
 CREATE SCHEMA IF NOT EXISTS app_security;
 
@@ -198,9 +206,17 @@ CREATE INDEX IF NOT EXISTS idx_chunks_document_id ON public.chunks(document_id);
 CREATE INDEX IF NOT EXISTS idx_chunks_tsv ON public.chunks USING gin(tsv);
 CREATE INDEX IF NOT EXISTS idx_chunks_text_trgm ON public.chunks USING gin(text gin_trgm_ops);
 CREATE INDEX IF NOT EXISTS idx_chunks_entities_trgm ON public.chunks USING gin ((entities_json::text) gin_trgm_ops);
-CREATE INDEX IF NOT EXISTS idx_chunks_bm25 ON public.chunks
-    USING bm25 (id, text)
-    WITH (key_field='id');
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_search') THEN
+        CREATE INDEX IF NOT EXISTS idx_chunks_bm25 ON public.chunks
+            USING bm25 (id, text)
+            WITH (key_field='id');
+    ELSE
+        RAISE NOTICE 'pg_search extension is unavailable; skipping idx_chunks_bm25.';
+    END IF;
+END
+$$;
 CREATE INDEX IF NOT EXISTS idx_quizzes_class_id ON public.quizzes(class_id);
 CREATE INDEX IF NOT EXISTS idx_quiz_documents_document_id ON public.quiz_documents(document_id);
 CREATE INDEX IF NOT EXISTS idx_quiz_submissions_quiz_id ON public.quiz_submissions(quiz_id);
