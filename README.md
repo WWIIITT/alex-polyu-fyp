@@ -122,6 +122,7 @@ Before running the project locally, install:
 - Node.js 20 or newer
 - npm
 - PostgreSQL
+- Docker Desktop, if using the local pgvector database setup below
 - Provider API keys for Google Gemini/OpenRouter-compatible services
 
 ## Database Setup with Neon Postgres
@@ -149,6 +150,41 @@ JWT_SECRET_KEY=<generate-a-long-random-secret>
 Neon deployments should use `FULLTEXT_SEARCH_BACKEND=pg_search` for BM25 retrieval. For local PostgreSQL instances that do not have the Neon `pg_search` extension, use `FULLTEXT_SEARCH_BACKEND=postgres` and rely on the PostgreSQL full-text/trigram fallback instead.
 
 If login fails with `function app_security.auth_store_refresh_token(...) does not exist`, confirm the current database has run either `backend/RAG_python-quiz/migrations/add_auth_refresh_tokens.sql` or the full `backend/RAG_python-quiz/migrations/000_init_database.sql` initializer.
+
+## Local Database Setup with Docker
+
+For local development, the simplest PostgreSQL setup is the `pgvector` Docker image. This provides the `vector` extension required by the retrieval tables. The Neon `pg_search` extension is optional locally; when it is unavailable, the initializer skips the BM25 index and the app should use the PostgreSQL full-text/trigram fallback.
+
+If another PostgreSQL service is already using port `5432`, stop it first or map Docker to another host port and update `PG_DSN` accordingly.
+
+```powershell
+docker rm -f polyu-postgres
+docker run --name polyu-postgres -e POSTGRES_PASSWORD="<local-postgres-password>" -p 5432:5432 -d pgvector/pgvector:pg18
+```
+
+Initialize the schema from the repository root:
+
+```powershell
+psql "postgresql://postgres:<local-postgres-password>@localhost:5432/postgres" -v ON_ERROR_STOP=1 -f backend/RAG_python-quiz/migrations/000_init_database.sql
+```
+
+If `psql` is not on `PATH`, use the full path to your PostgreSQL client, for example:
+
+```powershell
+& "D:\PostgreSQL\18\bin\psql.exe" "postgresql://postgres:<local-postgres-password>@localhost:5432/postgres" -v ON_ERROR_STOP=1 -f D:\GitHub\alex-polyu-fyp\backend\RAG_python-quiz\migrations\000_init_database.sql
+```
+
+Configure `backend/RAG_python-quiz/.env`:
+
+```dotenv
+PG_DSN=postgresql://postgres:<local-postgres-password>@localhost:5432/postgres
+FULLTEXT_SEARCH_BACKEND=postgres
+JWT_SECRET_KEY=<generate-a-long-random-secret>
+```
+
+Use your own local password and do not commit `.env` or live credentials.
+
+During local initialization, notices such as `pg_search extension is unavailable; skipping BM25 setup` are expected. They are not failures when `FULLTEXT_SEARCH_BACKEND=postgres`.
 
 ## Backend Setup
 
