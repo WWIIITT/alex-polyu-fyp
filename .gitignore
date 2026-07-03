@@ -2,3 +2,5 @@
 .coverage.*
 backend/RAG_python-quiz/coverage-data/
 .venv/
+
+backend/RAG_python-quiz/.env copy
