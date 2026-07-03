@@ -31,6 +31,30 @@ class QuizGenerateResponse(BaseModel):
     was_summarized: bool
 
 
+def _is_response_schema_rejection(error: Exception) -> bool:
+    message = str(error)
+    schema_markers = ("$defs", "$ref", "response_schema", "json_schema")
+    return "Invalid JSON payload" in message and any(marker in message for marker in schema_markers)
+
+
+def _plain_json_system_prompt(schema: dict) -> str:
+    return (
+        "Return only valid JSON matching this schema. Do not include markdown, comments, or extra text.\n"
+        f"Schema:\n{json.dumps(schema)}"
+    )
+
+
+def _parse_quiz_generation_response(response):
+    raw_text = extract_chat_completion_text(response, "Quiz generation")
+    if not raw_text:
+        raise RuntimeError("API returned empty content")
+    quiz_payload = json.loads(raw_text)
+    questions = [MultipleChoice(**item) for item in quiz_payload.get("questions", [])]
+    quiz_name = quiz_payload.get("quiz_name")
+    logger.info("[QuizGeneration] generated quiz name=%s questions=%s", quiz_name, len(questions))
+    return {"quiz_name": quiz_name, "questions": questions}
+
+
 def _merge_selected_levels(bloom_levels: Optional[List[BloomLevel]], difficulty: Optional[Difficulty]) -> List[BloomLevel]:
     selected_levels = list(dict.fromkeys(bloom_levels or []))
     if difficulty:
@@ -80,28 +104,36 @@ async def _summarize_text(api_key: str, raw_source_text: str, raw_model_name: st
 
 async def _generate_quiz_with_model(api_key: str, quiz_prompt: str, raw_model_name: str):
     client = get_llm_client(api_key)
+    response_schema = _QuizWithName.model_json_schema()
     logger.info("[QuizGeneration] generating quiz content")
-    response = await asyncio.to_thread(
-        client.chat.completions.create,
-        model=raw_model_name,
-        messages=[{"role": "user", "content": quiz_prompt}],
-        response_format={
-            "type": "json_schema",
-            "json_schema": {
-                "name": "quiz_generation",
-                "strict": True,
-                "schema": _QuizWithName.model_json_schema(),
+    try:
+        response = await asyncio.to_thread(
+            client.chat.completions.create,
+            model=raw_model_name,
+            messages=[{"role": "user", "content": quiz_prompt}],
+            response_format={
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "quiz_generation",
+                    "strict": True,
+                    "schema": response_schema,
+                },
             },
-        },
-    )
-    raw_text = extract_chat_completion_text(response, "Quiz generation")
-    if not raw_text:
-        raise RuntimeError("API returned empty content")
-    quiz_payload = json.loads(raw_text)
-    questions = [MultipleChoice(**item) for item in quiz_payload.get("questions", [])]
-    quiz_name = quiz_payload.get("quiz_name")
-    logger.info("[QuizGeneration] generated quiz name=%s questions=%s", quiz_name, len(questions))
-    return {"quiz_name": quiz_name, "questions": questions}
+        )
+    except Exception as error:
+        if not _is_response_schema_rejection(error):
+            raise
+        logger.warning("[QuizGeneration] provider rejected response schema; retrying with plain JSON prompt")
+        response = await asyncio.to_thread(
+            client.chat.completions.create,
+            model=raw_model_name,
+            messages=[
+                {"role": "system", "content": _plain_json_system_prompt(response_schema)},
+                {"role": "user", "content": quiz_prompt},
+            ],
+        )
+
+    return _parse_quiz_generation_response(response)
 
 
 async def generate_quiz_from_files(

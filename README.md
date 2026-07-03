@@ -315,6 +315,13 @@ Expo app:
 cd frontend\expo-app
 npm run start
 ```
+### Create Account
+
+```powershell
+Invoke-RestMethod -Method Post -Uri "http://localhost:3000/auth/register" -ContentType "application/json" -Body '{"email":"teacher@example.com","password":"password123","full_name":"Teacher One","role":"teacher"}'
+
+Invoke-RestMethod -Method Post -Uri "http://localhost:3000/auth/register" -ContentType "application/json" -Body '{"email":"student@example.com","password":"password123","full_name":"Student One","role":"student"}'
+```
 
 Default local URLs:
 
@@ -404,6 +411,7 @@ cd frontend\vite-project
 npm install
 npm run build
 ```
+
 
 ### Expo App
 

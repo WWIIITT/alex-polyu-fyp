@@ -11,7 +11,7 @@ from fastapi.testclient import TestClient
 from app.routers import quiz
 from app.services.core.exceptions import NotFoundError, ServiceError
 from app.utils.aqg import MultipleChoice
-from tests.support import FakeConnection, FakeCursor, fake_llm_retry, make_chat_client, make_settings, start_patches, with_auth
+from tests.support import FakeConnection, FakeCursor, fake_llm_retry, make_chat_client, make_completion_response, make_settings, start_patches, with_auth
 
 
 def make_question():
@@ -326,6 +326,54 @@ class QuizApiTests(unittest.TestCase):
         with self.assertRaises(HTTPException) as bad_json:
             asyncio.run(run_bad_json())
         self.assertEqual(bad_json.exception.status_code, 500)
+
+    def test_generate_quiz_falls_back_to_plain_json_when_schema_is_rejected(self):
+        fake_client = make_chat_client(
+            RuntimeError('Invalid JSON payload received. Unknown name "$defs" at response_schema'),
+            make_completion_response(),
+        )
+
+        async def run_success():
+            with patch("app.services.assessment.quiz_generation_service.get_files_text_content", return_value="Short source"), patch(
+                "app.services.pg.pg_db._get_conn",
+                return_value=class_lookup_conn(),
+            ), patch(
+                "app.services.assessment.quiz_generation_service.get_settings",
+                return_value=quiz_settings(),
+            ), patch(
+                "app.services.assessment.quiz_generation_service.get_llm_client",
+                return_value=fake_client,
+            ), patch(
+                "app.services.assessment.quiz_generation_service.extract_chat_completion_text",
+                return_value=json.dumps(
+                    {
+                        "quiz_name": "Quiz",
+                        "questions": [make_question().model_dump()],
+                    }
+                ),
+            ), patch(
+                "app.services.assessment.quiz_generation_service.with_llm_retry_async",
+                side_effect=fake_llm_retry,
+            ), patch(
+                "app.services.assessment.quiz_generation_service.save_quiz",
+                return_value={"quiz_id": "quiz-1", "name": "Quiz"},
+            ):
+                return await self.generate_quiz(
+                    file_ids=["file-1"],
+                    bloom_levels=["remember"],
+                    difficulty=None,
+                    num_questions=1,
+                )
+
+        result = asyncio.run(run_success())
+
+        self.assertEqual(result.questions[0].question, "What is SQL?")
+        self.assertEqual(fake_client.chat.completions.create.call_count, 2)
+        schema_kwargs = fake_client.chat.completions.create.call_args_list[0].kwargs
+        fallback_kwargs = fake_client.chat.completions.create.call_args_list[1].kwargs
+        self.assertEqual(schema_kwargs["response_format"]["type"], "json_schema")
+        self.assertNotIn("response_format", fallback_kwargs)
+        self.assertIn("Return only valid JSON", fallback_kwargs["messages"][0]["content"])
 
     def test_generate_quiz_summary_and_outer_error_paths(self):
         summary_client = object()

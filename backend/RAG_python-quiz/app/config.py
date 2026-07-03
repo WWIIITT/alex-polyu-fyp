@@ -1,4 +1,5 @@
 from functools import lru_cache
+from pathlib import Path
 from typing import List, Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -7,9 +8,11 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 EmbeddingColumn = Literal["embedding", "embedding_v2"]
 FullTextSearchBackend = Literal["pg_search", "postgres"]
 
+ENV_FILE = Path(__file__).resolve().parents[1] / ".env"
+
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=ENV_FILE, extra="ignore")
 
     port: int = 3000
     cors_origins: List[str] = [
